@@ -31,21 +31,19 @@ pipeline {
     JMETER_PROM_PORT = '9270'
     JMETER_CONTAINER_NAME = 'jmeter-run'
   }
- // Se cambia a que trabaje con el repo local y no lo clone nuevamente
+
   stages {
     stage('Checkout') {
       steps {
-        //checkout scm
-        //echo "Starting Performance Testing Pipeline for ${env.BRANCH_NAME}"
-        echo 'Skipping SCM checkout (repo already local)'
+        checkout scm
+        echo "Starting Performance Testing Pipeline for ${env.BRANCH_NAME}"
       }
     }
 
     stage('Build JMeter Image') {
       steps {
         sh """
-          echo "🧱 Building JMeter image from /UTEC-Final-Challenge-AndreAbreo/jmeter"
-          docker build -t ${JMETER_IMAGE} /UTEC-Final-Challenge-AndreAbreo/jmeter
+          docker build -t ${JMETER_IMAGE} ./jmeter
         """
       }
     }
