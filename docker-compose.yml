@@ -38,7 +38,7 @@ services:
       - jenkins_home:/var/jenkins_home
       - /var/run/docker.sock:/var/run/docker.sock
       - /usr/local/bin/docker:/usr/local/bin/docker
-       - ./UTEC-Final-Challenge-AndreAbreo:/UTEC-Final-Challenge-AndreAbreo   # 👈 agrega esta línea
+      - /home/andre/UTEC-Final-Challenge-AndreAbreo:/UTEC-Final-Challenge-AndreAbreo  # 👈 ruta absoluta
     environment:
       - JAVA_OPTS=-Djenkins.install.runSetupWizard=true
 
