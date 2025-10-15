@@ -64,3 +64,17 @@ services:
       - grafana_data:/var/lib/grafana
     depends_on:
       - prometheus
+
+  jmeter:
+    build: ./jmeter
+    container_name: jmeter-run
+    networks: [jenkins_net]
+    depends_on:
+      application:
+        condition: service_healthy
+    volumes:
+      - ./jmeter:/jmeter
+    command: >
+      -n -t /jmeter/test-plan.jmx
+      -l /jmeter/results.jtl
+      -e -o /jmeter/html
