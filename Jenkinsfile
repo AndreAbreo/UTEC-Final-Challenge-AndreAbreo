@@ -44,6 +44,7 @@ pipeline {
     stage('Build JMeter Image') {
       steps {
         sh """
+          echo "🧱 Building JMeter image from /UTEC-Final-Challenge-AndreAbreo/jmeter"
           docker build -t ${JMETER_IMAGE} /UTEC-Final-Challenge-AndreAbreo/jmeter
         """
       }
