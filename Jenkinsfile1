@@ -281,6 +281,7 @@ EOF
       }
     }
 
+
     stage('Collect Prometheus Metrics') {
       steps {
         script {
@@ -369,6 +370,13 @@ EOF
 
           echo "✅ HTML reports published to Jenkins"
         }
+      }
+    }
+
+    stage('Validate SLA Thresholds') {
+      steps {
+        echo "=== Validando SLA/SLO globales ==="
+      sh 'bash ./jmeter/validate-sla.sh'
       }
     }
 
