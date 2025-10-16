@@ -19,8 +19,8 @@ RUN mkdir -p /tmp/dependencies \
 # In production, you would add the Prometheus listener JAR here
 # COPY jmeter-prometheus-listener.jar ${JMETER_HOME}/lib/ext/jmeter-prometheus-listener.jar
 # Add Prometheus Listener for live metrics
-RUN wget -O /opt/apache-jmeter/lib/ext/jmeter-prometheus-plugin.jar \
-    https://github.com/johrstrom/jmeter-prometheus-plugin/releases/download/v0.6.0/jmeter-prometheus-plugin-0.6.0.jar
+#RUN wget -O /opt/apache-jmeter/lib/ext/jmeter-prometheus-plugin.jar \
+   # https://github.com/johrstrom/jmeter-prometheus-plugin/releases/download/v0.6.0/jmeter-prometheus-plugin-0.6.0.jar
 
 # Expose the Prometheus scrape port used by the listener
 EXPOSE 9270
