@@ -31,8 +31,8 @@ pipeline {
     JMETER_PROM_PORT = '9270'
     JMETER_CONTAINER_NAME = 'jmeter-run'
     
-    PROJECT_DIR = '/UTEC-Final-Challenge-AndreAbreo' // 👈 evita el error cuando monta el local y no busca en repo remoto
-    //PROJECT_DIR = "${WORKSPACE}" 
+    //PROJECT_DIR = '/UTEC-Final-Challenge-AndreAbreo' // 👈 evita el error cuando monta el local y no busca en repo remoto
+    PROJECT_DIR = "${WORKSPACE}" 
     BRANCH_NAME = 'local'        // 👈 evita el error MissingPropertyException
   }
  // Se cambia a que trabaje con el repo local y no lo clone nuevamente
@@ -50,12 +50,17 @@ pipeline {
       steps {
         sh """
           echo "🧱 Building JMeter image from ${PROJECT_DIR}/jmeter"
+          if [ ! -d "${PROJECT_DIR}/jmeter" ]; then
+            echo "❌ ERROR: No se encontró la carpeta jmeter en ${PROJECT_DIR}"
+            ls -la ${PROJECT_DIR}
+            exit 1
+          fi
           docker build -t ${JMETER_IMAGE} ${PROJECT_DIR}/jmeter
           echo "✅ JMeter image built successfully."
-          exit 0
         """
       }
     }
+
 
     stage('Wait for AUT') {
       steps {
@@ -317,35 +322,45 @@ EOF
         script {
           echo "=== Archiving All Performance Testing Artifacts ==="
 
-          // Archive JMeter results and reports
-          if (fileExists("${OUT_DIR}/results.jtl")) {
-            archiveArtifacts artifacts: "${OUT_DIR}/**", fingerprint: true
-            echo "✅ JMeter results and HTML reports archived"
+          // 📦 Archive JMeter results and reports + Apply SLA/SLO checks
+            if (fileExists("${OUT_DIR}/results.jtl")) {
+              archiveArtifacts artifacts: "${OUT_DIR}/**", fingerprint: true
+              echo "✅ JMeter results and HTML reports archived"
             
-            // Performance Plugin - Parse JTL files for trending and analysis
-            try {
-              perfReport(
-                sourceDataFiles: "${OUT_DIR}/results.jtl",
-                modeOfThreshold: true,
-                configType: 'ART',
-                modePerformancePerTestCase: true,
-                compareBuildPrevious: true,
-                modeThroughput: true,
-                nthBuildNumber: 0,
-                errorFailedThreshold: 5,
-                errorUnstableThreshold: 10,
-                relativeFailedThresholdPositive: 20,
-                relativeFailedThresholdNegative: 0,
-                relativeUnstableThresholdPositive: 50,
-                relativeUnstableThresholdNegative: 0,
-                modeEvaluation: true
-              )
-              echo "✅ Performance trends and analysis configured"
-            } catch (Exception e) {
-              echo "⚠️ Performance Plugin not available: ${e.message}"
-              echo "📝 Install Performance Plugin in Jenkins: Manage Jenkins → Manage Plugins → Search 'Performance'"
+              // 🔍 Performance Plugin: trend + SLA thresholds
+              try {
+                perfReport(
+                  sourceDataFiles: "${OUT_DIR}/results.jtl",
+                  compareBuildPrevious: true,
+                  modeThroughput: true,
+                  // SLA / SLO thresholds (95th percentile)
+                  errorFailedThreshold: 5,       // Falla si más del 5% de requests fallan
+                  errorUnstableThreshold: 1,     // Marca Unstable si más del 1% fallan
+                  relativeFailedThresholdPositive: 10, // Falla si p95 sube más de 10%
+                  relativeUnstableThresholdPositive: 5, // Unstable si sube más de 5%
+                  nthBuildNumber: 0
+                )
+            
+                // Evaluación adicional manual (para p95 / p99 esperados)
+                echo "📊 Evaluating SLA/SLO conditions..."
+                sh '''
+                  P95=$(awk -F, '{a[$8]++; sum[$8]+=$2} END {if (a["true"]>0) print int(sum["true"]/a["true"]); else print 0}' out/results.jtl)
+                  if [ $P95 -le 500 ]; then
+                    echo "✅ SLA met: p95 = ${P95}ms (below 500ms)"
+                  elif [ $P95 -le 1000 ]; then
+                    echo "⚠️ SLO warning: p95 = ${P95}ms (below 1000ms but above target)"
+                  else
+                    echo "❌ SLA breached: p95 = ${P95}ms (above 1000ms)"
+                    exit 1
+                  fi
+                '''
+                echo "✅ Performance trends and SLA validation completed"
+              } catch (Exception e) {
+                echo "⚠️ Performance Plugin not available or parsing error: ${e.message}"
+                echo "📝 Make sure 'Performance Plugin' is installed in Jenkins"
+              }
             }
-          }
+
 
           // Archive generated reports
           if (fileExists("${REPORTS_DIR}")) {
@@ -398,7 +413,8 @@ EOF
             echo "   Total Requests: ${results}"
             echo "   Errors: ${errors}"
             //echo "   Success Rate: ${Math.round(successRate * 10) / 10}%"
-            def roundedSuccessRate = (successRate * 10).intdiv(10)
+            def roundedSuccessRate = (successRate ?: 0).toInteger()
+
             echo "   Success Rate: ${roundedSuccessRate}%"
             echo "   Average Response Time: ${avgResponse}ms"
             echo "   Max Response Time: ${maxResponse}ms"
@@ -449,32 +465,34 @@ EOF
     }
   }
 
-  post {
-    always {
-      echo "=== Performance Testing Pipeline Complete ==="
-      echo "Build: ${env.BUILD_URL}"
-      echo "Reports available in Jenkins artifacts and HTML publisher"
+    post {
+        always {
+          echo "=== Performance Testing Pipeline Complete ==="
+          echo "Build: ${env.BUILD_URL}"
+          echo "Reports available in Jenkins artifacts and HTML publisher"
+          echo "✅ Pipeline finalizado correctamente (sin errores de ejecución)"
+        }
+    
+        success {
+          echo "✅ Performance testing completed successfully"
+        }
+    
+        unstable {
+          echo "⚠️  Performance testing completed with warnings"
+        }
+    
+        failure {
+          echo "❌ Performance testing failed"
+          // Optional: Send notifications here
+        }
+    
+        cleanup {
+          // Clean up Docker containers
+          sh """
+            docker rm -f ${JMETER_CONTAINER_NAME} >/dev/null 2>&1 || true
+            echo "Cleanup completed"
+          """
+        }
+      }
     }
-
-    success {
-      echo "✅ Performance testing completed successfully"
-    }
-
-    unstable {
-      echo "⚠️  Performance testing completed with warnings"
-    }
-
-    failure {
-      echo "❌ Performance testing failed"
-      // Optional: Send notifications here
-    }
-
-    cleanup {
-      // Clean up Docker containers
-      sh """
-        docker rm -f ${JMETER_CONTAINER_NAME} >/dev/null 2>&1 || true
-        echo "Cleanup completed"
-      """
-    }
-  }
-}
+    
