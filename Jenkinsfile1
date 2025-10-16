@@ -82,7 +82,7 @@ pipeline {
           # Override entrypoint to use shell and keep container alive
           docker run -d \
             --name ${JMETER_CONTAINER_NAME} \
-            --network=${DOCKER_NETWORK} \
+            --network=${env.DOCKER_NETWORK} \
             --memory=1g \
             --memory-swap=2g \
             --shm-size=256m \
