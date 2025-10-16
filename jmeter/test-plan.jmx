@@ -248,18 +248,6 @@
           </objProp>
           <stringProp name="filename">Integrador1.jtl</stringProp>
         </ResultCollector>
-        <kg.apc.jmeter.reporters.prometheus.PrometheusListener guiclass="kg.apc.jmeter.reporters.prometheus.PrometheusListenerGui" testclass="kg.apc.jmeter.reporters.prometheus.PrometheusListener" testname="Prometheus Listener" enabled="true">
-            <stringProp name="PrometheusListener.port">9270</stringProp>
-            <stringProp name="PrometheusListener.metricsPrefix">jmeter_</stringProp>
-            <stringProp name="PrometheusListener.path">/metrics</stringProp>
-            <stringProp name="PrometheusListener.percentiles">0.5,0.9,0.95,0.99</stringProp>
-            <boolProp name="PrometheusListener.saveSamples">true</boolProp>
-            <collectionProp name="PrometheusListener.labels">
-            <stringProp name="0">label</stringProp>
-            <stringProp name="1">responseCode</stringProp>
-            <stringProp name="2">threadName</stringProp>
-            </collectionProp>
-          </kg.apc.jmeter.reporters.prometheus.PrometheusListener>
         <hashTree/>
       </hashTree>
     </hashTree>
