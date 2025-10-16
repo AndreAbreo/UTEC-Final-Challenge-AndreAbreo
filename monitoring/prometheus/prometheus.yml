@@ -13,3 +13,13 @@ scrape_configs:
   - job_name: "jmeter"
     static_configs:
       - targets: ["jmeter-run:9270"]
+
+  scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+- job_name: 'jenkins'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['192.168.1.21:8080']
